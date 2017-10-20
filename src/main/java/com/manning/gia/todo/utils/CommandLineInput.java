@@ -17,7 +17,7 @@ public enum CommandLineInput {
 
     private final char shortCmd;
 
-    private CommandLineInput(char shortCmd) {
+    CommandLineInput(char shortCmd) {
         this.shortCmd = shortCmd;
     }
 
