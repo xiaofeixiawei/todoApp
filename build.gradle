@@ -23,3 +23,11 @@ buildscript {
 }
 
 apply plugin: 'org.akhikhl.gretty'
+
+gretty {
+    //设置访问端口
+    httpPort = 8081
+    //设置上下文路径
+    contextPath = 'todo'
+}
+
