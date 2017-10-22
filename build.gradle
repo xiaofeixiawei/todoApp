@@ -31,3 +31,8 @@ gretty {
     contextPath = 'todo'
 }
 
+//这里可以不写，直接执行默认的wrapper就行
+//task wrapper(type: Wrapper){
+//    group 'build setup'
+//    gradleVersion = '4.2'
+//}
