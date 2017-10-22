@@ -12,3 +12,14 @@ dependencies {
     runtime 'javax.servlet:jstl:1.1.2',
             'taglibs:standard:1.1.2'
 }
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'org.akhikhl.gretty:gretty:1.4.2'
+    }
+}
+
+apply plugin: 'org.akhikhl.gretty'
