@@ -56,11 +56,6 @@ task makeReleaseVersion {
         ant.propertyfile(file: versionFile) {
             entry(key: 'release', value: 'true') //同时同步版本信息文件
         }
-
-        Properties versionProp = new Properties()
-        versionFile.withInputStream { stream ->
-            versionProp.load(stream)
-        }
     }
 }
 
