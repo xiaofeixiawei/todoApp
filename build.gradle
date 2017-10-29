@@ -1,4 +1,3 @@
-
 apply plugin: 'war'
 
 repositories {
@@ -12,6 +11,7 @@ dependencies {
             'taglibs:standard:1.1.2'
 }
 
+
 //=============================配置项目发布版本============================
 class ProjectVersion {
     Integer major
@@ -23,8 +23,53 @@ class ProjectVersion {
         return "$major.$minor${release ? '' : '-SNAPSHOT'}"
     }
 }
-version = new ProjectVersion(major: 1, minor: 0, release: true)
 
+ext.versionFile = file('version.properties') //要在写在loadVersion配置前
+//task配置
+task loadVersion {
+    group = 'version'
+    description = '加载版本信息文件来配置版本号'
+    def version = readVersion()
+    logger.quiet "当前生成版本为${project.name}-${version}"
+    project.version = version
+}
+
+ProjectVersion readVersion() {
+    logger.quiet '开始读取版本信息文件'
+    if (!versionFile.exists()) {
+        throw new GradleException("版本信息文件[${versionFile.path}]不存在")
+    }
+    Properties versionProp = new Properties()
+    versionFile.withInputStream { stream ->
+        versionProp.load(stream)
+    }
+    new ProjectVersion(major: versionProp.major as Integer, minor: versionProp.minor as Integer, release: versionProp.release.toBoolean())
+}
+
+task makeReleaseVersion {
+    group = 'version'
+    description = 'Makes project a release version'
+    inputs.property 'release', version.release
+    outputs.file versionFile
+    doLast {
+        project.version.release = true
+        ant.propertyfile(file: versionFile) {
+            entry(key: 'release', value: 'true') //同时同步版本信息文件
+        }
+
+        Properties versionProp = new Properties()
+        versionFile.withInputStream { stream ->
+            versionProp.load(stream)
+        }
+    }
+}
+
+task mockPublish(group:'publish', description:'模拟发布，测试makeReleaseVersion') {
+    dependsOn makeReleaseVersion, war
+    doLast {
+        logger.quiet '模拟发布项目'
+    }
+}
 
 
 //==========================gretty插件的使用============================
@@ -38,10 +83,8 @@ buildscript {
 }
 apply plugin: 'org.akhikhl.gretty'
 gretty {
-    //设置访问端口
-    httpPort = 8081
-    //设置上下文路径
-    contextPath = 'todo'
+    httpPort = 8081 //设置访问端口
+    contextPath = 'todo' //设置上下文路径
 }
 
 
