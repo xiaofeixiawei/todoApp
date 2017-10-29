@@ -1,10 +1,9 @@
+
 apply plugin: 'war'
-version = '1.0'
 
 repositories {
     mavenCentral()
 }
-
 dependencies {
 
     providedCompile 'javax.servlet:servlet-api:2.5',
@@ -13,6 +12,22 @@ dependencies {
             'taglibs:standard:1.1.2'
 }
 
+//=============================配置项目发布版本============================
+class ProjectVersion {
+    Integer major
+    Integer minor
+    Boolean release
+
+    @Override
+    String toString() {
+        return "$major.$minor${release ? '' : '-SNAPSHOT'}"
+    }
+}
+version = new ProjectVersion(major: 1, minor: 0, release: true)
+
+
+
+//==========================gretty插件的使用============================
 buildscript {
     repositories {
         jcenter()
@@ -21,9 +36,7 @@ buildscript {
         classpath 'org.akhikhl.gretty:gretty:1.4.2'
     }
 }
-
 apply plugin: 'org.akhikhl.gretty'
-
 gretty {
     //设置访问端口
     httpPort = 8081
@@ -31,8 +44,4 @@ gretty {
     contextPath = 'todo'
 }
 
-//这里可以不写，直接执行默认的wrapper就行
-//task wrapper(type: Wrapper){
-//    group 'build setup'
-//    gradleVersion = '4.2'
-//}
+
