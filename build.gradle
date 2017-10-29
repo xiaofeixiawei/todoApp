@@ -1,3 +1,5 @@
+import org.gradle.api.tasks.Optional
+
 apply plugin: 'war'
 
 repositories {
@@ -46,17 +48,44 @@ ProjectVersion readVersion() {
     new ProjectVersion(major: versionProp.major as Integer, minor: versionProp.minor as Integer, release: versionProp.release.toBoolean())
 }
 
-task makeReleaseVersion {
-    group = 'version'
-    description = 'Makes project a release version'
-    inputs.property 'release', version.release
-    outputs.file versionFile
-    doLast {
+//task makeReleaseVersion {
+//    group = 'version'
+//    description = 'Makes project a release version'
+//    inputs.property 'release', version.release
+//    outputs.file versionFile
+//    doLast {
+//        project.version.release = true
+//        ant.propertyfile(file: versionFile) {
+//            entry(key: 'release', value: 'true') //同时同步版本信息文件
+//        }
+//    }
+//}
+
+//自定义task类型
+class ReleaseVersionTask extends DefaultTask {
+    //使用注解@Input、@OutputFile声明task的输入\输出，也可以使用默认的输入\输出(inputs\outputs)。@Input注解在配置期间验证属性值，如果为null抛出异常，所以需要添加@Optional
+    @Optional
+    @Input
+    Boolean release
+    @OutputFile
+    File destFile
+
+    //使用注解声明task的执行方法
+    @TaskAction
+    void action(){
         project.version.release = true
-        ant.propertyfile(file: versionFile) {
+        ant.propertyfile(file: destFile) {
             entry(key: 'release', value: 'true') //同时同步版本信息文件
         }
     }
+}
+task makeReleaseVersion(type: ReleaseVersionTask) {
+    group = 'version'
+    description = 'Makes project a release version'
+    release = project.version.release
+    destFile = versionFile
+//    inputs.property 'release', version.release
+//    outputs.file versionFile
 }
 
 task mockPublish(group:'publish', description:'模拟发布，测试makeReleaseVersion') {
