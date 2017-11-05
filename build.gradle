@@ -14,6 +14,7 @@ dependencies {
 }
 
 
+
 //=============================配置项目发布版本============================
 class ProjectVersion {
     Integer major
@@ -79,6 +80,7 @@ class ReleaseVersionTask extends DefaultTask {
         }
     }
 }
+//增强task
 task makeReleaseVersion(type: ReleaseVersionTask) {
     group = 'version'
     description = 'Makes project a release version'
@@ -93,6 +95,26 @@ task mockPublish(group:'publish', description:'模拟发布，测试makeReleaseV
     doLast {
         logger.quiet '模拟发布项目'
     }
+}
+
+
+//=========================gradle内置task类型使用，Zip、Copy==================
+task createDistribution(type: Zip, dependsOn: makeReleaseVersion) {
+    archiveName = 'todoAPP.zip' //默认是['项目名'-'版本号'.zip]
+    //把ar task的输出文件打包到压缩包的根目录下；引用ar task的输出，默认就依赖了war task
+    from(war.outputs.files)
+    //把源码打包到压缩包的'src'目录下
+    from(sourceSets*.allSource) {
+        into 'src'
+    }
+    //把项目根路径下的版本信息文件打包到压缩包的根目录下
+    from(rootDir) {
+        include versionFile.name
+    }
+}
+task backupReleaseDistribution(type: Copy) {
+    from(createDistribution.outputs.files)
+    into "$buildDir/backup"
 }
 
 
