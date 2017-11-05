@@ -117,6 +117,34 @@ task backupReleaseDistribution(type: Copy) {
     into "$buildDir/backup"
 }
 
+//=========================task规则===================================
+//如果任务匹配规则，并且此任务显式声明了，则规则不执行
+//task incrementMajorVersion {
+//}
+tasks.addRule('Pattern: increment<Classifier>Version - Increments the project version classifier') { String taskName ->
+    if (taskName.startsWith('increment') && taskName.endsWith('Version')) {
+        task(taskName) {
+            doLast {
+                String currentVersion = project.version.toString()
+
+                String classifier = (taskName - 'increment' - 'Version').toLowerCase()
+                switch (classifier) {
+                    case 'major': version.major++; break
+                    case 'minor': version.minor++; break
+                    default: throw new GradleException("Invalid version type [$classifier]. Allow types: [major,minor]")
+                }
+
+                String newVersion = version.toString()
+                logger.quiet "incrementing $classifier project version: $currentVersion to $newVersion"
+                ant.propertyfile(file:  versionFile) {
+                    entry(key:classifier, type:'int', operation:'+', value: 1)
+                }
+            }
+        }
+    }
+}
+
+
 
 //==========================gretty插件的使用============================
 buildscript {
