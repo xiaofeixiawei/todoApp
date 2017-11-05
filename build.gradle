@@ -1,4 +1,5 @@
-import org.gradle.api.tasks.Optional
+import com.manning.gia.todo.ProjectVersion
+import com.manning.gia.todo.ReleaseVersionTask
 
 apply plugin: 'war'
 
@@ -16,17 +17,6 @@ dependencies {
 
 
 //=============================配置项目发布版本============================
-class ProjectVersion {
-    Integer major
-    Integer minor
-    Boolean release
-
-    @Override
-    String toString() {
-        return "$major.$minor${release ? '' : '-SNAPSHOT'}"
-    }
-}
-
 ext.versionFile = file('version.properties') //要在写在loadVersion配置前
 //task配置
 task loadVersion {
@@ -62,24 +52,6 @@ ProjectVersion readVersion() {
 //    }
 //}
 
-//自定义task类型
-class ReleaseVersionTask extends DefaultTask {
-    //使用注解@Input、@OutputFile声明task的输入\输出，也可以使用默认的输入\输出(inputs\outputs)。@Input注解在配置期间验证属性值，如果为null抛出异常，所以需要添加@Optional
-    @Optional
-    @Input
-    Boolean release
-    @OutputFile
-    File destFile
-
-    //使用注解声明task的执行方法
-    @TaskAction
-    void action(){
-        project.version.release = true
-        ant.propertyfile(file: destFile) {
-            entry(key: 'release', value: 'true') //同时同步版本信息文件
-        }
-    }
-}
 //增强task
 task makeReleaseVersion(type: ReleaseVersionTask) {
     group = 'version'
@@ -98,11 +70,12 @@ task mockPublish(group:'publish', description:'模拟发布，测试makeReleaseV
 }
 
 
+
 //=========================gradle内置task类型使用，Zip、Copy==================
-task createDistribution(type: Zip, dependsOn: makeReleaseVersion) {
+task createDistribution(type: Zip) {
     archiveName = 'todoAPP.zip' //默认是['项目名'-'版本号'.zip]
     //把ar task的输出文件打包到压缩包的根目录下；引用ar task的输出，默认就依赖了war task
-    from(war.outputs.files)
+    from war.outputs.files
     //把源码打包到压缩包的'src'目录下
     from(sourceSets*.allSource) {
         into 'src'
@@ -116,6 +89,8 @@ task backupReleaseDistribution(type: Copy) {
     from(createDistribution.outputs.files)
     into "$buildDir/backup"
 }
+
+
 
 //=========================task规则===================================
 //如果任务匹配规则，并且此任务显式声明了，则规则不执行
