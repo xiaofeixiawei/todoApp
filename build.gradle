@@ -2,6 +2,7 @@ import com.manning.gia.todo.ProjectVersion
 import com.manning.gia.todo.ReleaseVersionTask
 
 apply plugin: 'war'
+sourceCompatibility = 1.7
 
 repositories {
     mavenCentral()
@@ -13,6 +14,42 @@ dependencies {
     runtime 'javax.servlet:jstl:1.1.2',
             'taglibs:standard:1.1.2'
 }
+
+//=========================声明自定义依赖配置=====================================
+configurations{
+    cargo{
+        description = 'Classpath for cargo Ant tasks'
+        visible = false
+    }
+}
+configurations.cargo.resolutionStrategy {
+//---------------------------------------------------------
+//    failOnVersionConflict() //依赖版本遇到冲突时构建失败
+//---------------------------------------------------------
+    force 'xml-apis:xml-apis:1.3.04' //强制指定某一版本
+}
+dependencies {
+    cargo group: 'org.codehaus.cargo', name: 'cargo-ant', version: '1.3.1'
+    cargo group: 'org.codehaus.cargo', name: 'cargo-core-uberjar', version: '1.3.1'
+//------------------------------------------------------------------------------------
+//    cargo(group: 'org.codehaus.cargo', name: 'cargo-ant', version: '1.3.1') {
+//        exclude group: 'xml-apis', module: 'xml-apis' //排除摸个模块的依赖
+//    }
+//    cargo 'xml-apis:xml-apis:1.3.01'
+//    cargo group: 'org.codehaus.cargo', name: 'cargo-core-uberjar', version: '1.3.1'
+//-----------------------------------------------------------------------------------
+//    cargo(group: 'org.codehaus.cargo', name: 'cargo-ant', version: '1.3.1') {
+//        transitive = false //取消传递性依赖
+//    }
+//    cargo(group: 'org.codehaus.cargo', name: 'cargo-core-uberjar', version: '1.3.1') {
+//        transitive = false
+//    }
+//-----------------------------------------------------------------------------------
+//    cargo group: 'org.codehaus.cargo', name: 'cargo-ant', version: '1.+' //动态版本声明，获取1.x的最新版本
+//    cargo group: 'org.codehaus.cargo', name: 'cargo-core-uberjar', version: '1.3.1'
+
+}
+
 
 
 
