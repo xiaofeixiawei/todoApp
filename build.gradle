@@ -1,38 +1,8 @@
 
-ext.projectIds = [group:'com.manning.gia', version:'0.1']
-group = projectIds.group
-version = projectIds.version
-
-project(':model') {
-    group = projectIds.group
-    version = projectIds.version
+allprojects {
+    group = 'com.manning.gia'
+    version = '0.1'
+}
+subprojects {
     apply plugin: 'java'
 }
-project(':repository') {
-    group = projectIds.group
-    version = projectIds.version
-    apply plugin: 'java'
-    
-    dependencies {
-        compile project(':model')
-    }
-}
-project(':web') {
-    group = projectIds.group
-    version = projectIds.version
-    apply plugin: 'java'
-    apply plugin: 'war'
-
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-
-        providedCompile 'javax.servlet:servlet-api:2.5',
-                'javax.servlet.jsp:jsp-api:2.1'
-        runtime 'javax.servlet:jstl:1.1.2',
-                'taglibs:standard:1.1.2'
-        compile project(':repository')
-    }
-}
-
