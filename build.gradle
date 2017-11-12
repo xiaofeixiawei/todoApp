@@ -1,176 +1,38 @@
-import com.manning.gia.todo.ProjectVersion
-import com.manning.gia.todo.ReleaseVersionTask
 
-apply plugin: 'war'
-sourceCompatibility = 1.7
+ext.projectIds = [group:'com.manning.gia', version:'0.1']
+group = projectIds.group
+version = projectIds.version
 
-repositories {
-    mavenCentral()
+project(':model') {
+    group = projectIds.group
+    version = projectIds.version
+    apply plugin: 'java'
 }
-dependencies {
-
-    providedCompile 'javax.servlet:servlet-api:2.5',
-            'javax.servlet.jsp:jsp-api:2.1'
-    runtime 'javax.servlet:jstl:1.1.2',
-            'taglibs:standard:1.1.2'
-}
-
-//=========================声明自定义依赖配置=====================================
-configurations{
-    cargo{
-        description = 'Classpath for cargo Ant tasks'
-        visible = false
+project(':repository') {
+    group = projectIds.group
+    version = projectIds.version
+    apply plugin: 'java'
+    
+    dependencies {
+        compile project(':model')
     }
 }
-configurations.cargo.resolutionStrategy {
-//---------------------------------------------------------
-//    failOnVersionConflict() //依赖版本遇到冲突时构建失败
-//---------------------------------------------------------
-    force 'xml-apis:xml-apis:1.3.04' //强制指定某一版本
-}
-dependencies {
-    cargo group: 'org.codehaus.cargo', name: 'cargo-ant', version: '1.3.1'
-    cargo group: 'org.codehaus.cargo', name: 'cargo-core-uberjar', version: '1.3.1'
-//------------------------------------------------------------------------------------
-//    cargo(group: 'org.codehaus.cargo', name: 'cargo-ant', version: '1.3.1') {
-//        exclude group: 'xml-apis', module: 'xml-apis' //排除摸个模块的依赖
-//    }
-//    cargo 'xml-apis:xml-apis:1.3.01'
-//    cargo group: 'org.codehaus.cargo', name: 'cargo-core-uberjar', version: '1.3.1'
-//-----------------------------------------------------------------------------------
-//    cargo(group: 'org.codehaus.cargo', name: 'cargo-ant', version: '1.3.1') {
-//        transitive = false //取消传递性依赖
-//    }
-//    cargo(group: 'org.codehaus.cargo', name: 'cargo-core-uberjar', version: '1.3.1') {
-//        transitive = false
-//    }
-//-----------------------------------------------------------------------------------
-//    cargo group: 'org.codehaus.cargo', name: 'cargo-ant', version: '1.+' //动态版本声明，获取1.x的最新版本
-//    cargo group: 'org.codehaus.cargo', name: 'cargo-core-uberjar', version: '1.3.1'
+project(':web') {
+    group = projectIds.group
+    version = projectIds.version
+    apply plugin: 'java'
+    apply plugin: 'war'
 
-}
-
-
-
-
-//=============================配置项目发布版本============================
-ext.versionFile = file('version.properties') //要在写在loadVersion配置前
-//task配置
-task loadVersion {
-    group = 'version'
-    description = '加载版本信息文件来配置版本号'
-    def version = readVersion()
-    logger.quiet "当前生成版本为${project.name}-${version}"
-    project.version = version
-}
-
-ProjectVersion readVersion() {
-    logger.quiet '开始读取版本信息文件'
-    if (!versionFile.exists()) {
-        throw new GradleException("版本信息文件[${versionFile.path}]不存在")
-    }
-    Properties versionProp = new Properties()
-    versionFile.withInputStream { stream ->
-        versionProp.load(stream)
-    }
-    new ProjectVersion(major: versionProp.major as Integer, minor: versionProp.minor as Integer, release: versionProp.release.toBoolean())
-}
-
-//task makeReleaseVersion {
-//    group = 'version'
-//    description = 'Makes project a release version'
-//    inputs.property 'release', version.release
-//    outputs.file versionFile
-//    doLast {
-//        project.version.release = true
-//        ant.propertyfile(file: versionFile) {
-//            entry(key: 'release', value: 'true') //同时同步版本信息文件
-//        }
-//    }
-//}
-
-//增强task
-task makeReleaseVersion(type: ReleaseVersionTask) {
-    group = 'version'
-    description = 'Makes project a release version'
-    release = project.version.release
-    destFile = versionFile
-//    inputs.property 'release', version.release
-//    outputs.file versionFile
-}
-
-task mockPublish(group:'publish', description:'模拟发布，测试makeReleaseVersion') {
-    dependsOn makeReleaseVersion, war
-    doLast {
-        logger.quiet '模拟发布项目'
-    }
-}
-
-
-
-//=========================gradle内置task类型使用，Zip、Copy==================
-task createDistribution(type: Zip) {
-    archiveName = 'todoAPP.zip' //默认是['项目名'-'版本号'.zip]
-    //把ar task的输出文件打包到压缩包的根目录下；引用ar task的输出，默认就依赖了war task
-    from war.outputs.files
-    //把源码打包到压缩包的'src'目录下
-    from(sourceSets*.allSource) {
-        into 'src'
-    }
-    //把项目根路径下的版本信息文件打包到压缩包的根目录下
-    from(rootDir) {
-        include versionFile.name
-    }
-}
-task backupReleaseDistribution(type: Copy) {
-    from(createDistribution.outputs.files)
-    into "$buildDir/backup"
-}
-
-
-
-//=========================task规则===================================
-//如果任务匹配规则，并且此任务显式声明了，则规则不执行
-//task incrementMajorVersion {
-//}
-tasks.addRule('Pattern: increment<Classifier>Version - Increments the project version classifier') { String taskName ->
-    if (taskName.startsWith('increment') && taskName.endsWith('Version')) {
-        task(taskName) {
-            doLast {
-                String currentVersion = project.version.toString()
-
-                String classifier = (taskName - 'increment' - 'Version').toLowerCase()
-                switch (classifier) {
-                    case 'major': version.major++; break
-                    case 'minor': version.minor++; break
-                    default: throw new GradleException("Invalid version type [$classifier]. Allow types: [major,minor]")
-                }
-
-                String newVersion = version.toString()
-                logger.quiet "incrementing $classifier project version: $currentVersion to $newVersion"
-                ant.propertyfile(file:  versionFile) {
-                    entry(key:classifier, type:'int', operation:'+', value: 1)
-                }
-            }
-        }
-    }
-}
-
-
-
-//==========================gretty插件的使用============================
-buildscript {
     repositories {
-        jcenter()
+        mavenCentral()
     }
     dependencies {
-        classpath 'org.akhikhl.gretty:gretty:1.4.2'
+
+        providedCompile 'javax.servlet:servlet-api:2.5',
+                'javax.servlet.jsp:jsp-api:2.1'
+        runtime 'javax.servlet:jstl:1.1.2',
+                'taglibs:standard:1.1.2'
+        compile project(':repository')
     }
 }
-apply plugin: 'org.akhikhl.gretty'
-gretty {
-    httpPort = 8081 //设置访问端口
-    contextPath = 'todo' //设置上下文路径
-}
-
 
